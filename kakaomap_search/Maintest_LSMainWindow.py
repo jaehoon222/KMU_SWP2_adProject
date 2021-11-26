@@ -1,8 +1,10 @@
 import pickle
+import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import QUrl
 from LocaleSearcher import *
+from BookMark import BookMark
 
 food = '떡볶이'
 
@@ -102,9 +104,114 @@ class LSMainWindow(QMainWindow):
         #a = pickle.load(fH)
         #print(a)
         #fH.close()
-        self.setCurrentIndex(self.currentIndex() + 1)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
 
     def Move(self, x, y):
         page = self.webEngineView.page()
         script = str.format("setMyCenter({0},{1});", y, x)
         page = page.runJavaScript(script)
+
+
+class BookMark(QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+
+        self.dbfilename = 'foodBookmark.dat'
+        self.restaurantDB = []
+
+        self.resize(1080, 640)
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.grid = QGridLayout(self.widget)
+
+        self.lbox = QListWidget()
+        self.grid.addWidget(self.lbox, 0, 0, 1, 3)
+
+        self.btnDelete = QPushButton()
+        self.btnDelete.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.grid.addWidget(self.btnDelete, 1, 2)
+        self.btnDelete.setText("해당 음식점 삭제")
+
+        self.btn = QPushButton()
+        self.btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.grid.addWidget(self.btn, 1, 0)
+        self.btn.setText("지도 이동")
+
+        self.btnPrint = QPushButton()
+        self.btnPrint.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.grid.addWidget(self.btnPrint, 1, 1)
+        self.btnPrint.setText("즐겨찾기 출력")
+
+        self.grid.setRowStretch(0, 10)
+        self.grid.setRowStretch(1, 1)
+        self.grid.setColumnStretch(0, 4)
+        self.grid.setColumnStretch(1, 1)
+
+        self.setLayout(self.grid)
+
+        self.btnPrint.clicked.connect(self.showBookmarkDB)
+        self.btn.clicked.connect(self.go)
+        self.btnDelete.clicked.connect(self.delBookmarkDB)
+
+        self.readBookmarkDB()
+        self.showBookmarkDB()
+        self.show()
+
+    def go(self):
+        widget.setCurrentIndex(widget.currentIndex() - 1)
+
+    def readBookmarkDB(self):
+        try:
+            fH = open(self.dbfilename, 'rb')
+        except FileNotFoundError as e:
+            self.restaurantDB = []
+            return
+        try:
+            self.restaurantDB = pickle.load(fH)
+        except:
+            pass
+        else:
+            pass
+        fH.close()
+
+    def showBookmarkDB(self):
+        fH = open(self.dbfilename, 'rb')
+        try:
+            self.restaurantDB = pickle.load(fH)
+        except:
+            pass
+        else:
+            pass
+        self.lbox.clear()
+        for p in self.restaurantDB:
+            msg = p[0] + ' \t' + p[1] + '\t\t' + p[2] + ' \t' + p[3] + ' \t'
+            self.lbox.addItem(msg)
+
+        fH.close()
+
+    def delBookmarkDB(self):
+        fH = open(self.dbfilename, 'wb')
+        row = self.lbox.currentRow()
+        del self.restaurantDB[row]
+        pickle.dump(self.restaurantDB, fH)
+        fH.close()
+
+        self.showBookmarkDB()
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+
+    widget = QStackedWidget()
+
+    lSMainWindow = LSMainWindow()
+    bookMark = BookMark()
+
+    widget.addWidget(lSMainWindow)
+    widget.addWidget(bookMark)
+
+    widget.setFixedHeight(640)
+    widget.setFixedWidth(1080)
+    widget.show()
+
+    app.exec_()
